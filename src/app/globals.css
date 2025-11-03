@@ -91,6 +91,12 @@
   }
 }
 
+@media (pointer: fine) {
+  body {
+    cursor: none;
+  }
+}
+
 .word-marquee {
   position: absolute;
   display: flex;

@@ -8,7 +8,6 @@ import { CursorTrail } from "@/components/game/cursor-trail";
 import { DefinitionDialog } from "@/components/game/definition-dialog";
 import { DifficultyDialog } from "@/components/game/difficulty-dialog";
 import { HeroTitle } from "@/components/game/hero-title";
-import { LandingOverlay } from "@/components/game/landing-overlay";
 import { Keyboard } from "@/components/game/keyboard";
 import { StreakCard } from "@/components/game/streak-card";
 import { WordMarquee } from "@/components/game/word-marquee";
@@ -113,10 +112,9 @@ export function GameShell({ dictionary }: GameShellProps) {
 	const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
 	const [solution, setSolution] = useState<WordEntry | null>(null);
 	const [gameStatus, setGameStatus] = useState<GameStatus>("idle");
-	const [showLanding, setShowLanding] = useState(true);
 	const [evaluations, setEvaluations] = useState<GuessEvaluation[]>([]);
 	const [currentGuess, setCurrentGuess] = useState("");
-	const [showDifficultyModal, setShowDifficultyModal] = useState(false);
+	const [showDifficultyModal, setShowDifficultyModal] = useState(true);
 	const [invalidRow, setInvalidRow] = useState<number | null>(null);
 	const [streak, setStreak] = useState<StreakState>(defaultStreak);
 
@@ -340,7 +338,7 @@ export function GameShell({ dictionary }: GameShellProps) {
 
 	const handleVirtualKey = useCallback(
 		(key: string) => {
-			if (showLanding || showDifficultyModal || gameStatus !== "playing" || !solution) {
+			if (showDifficultyModal || gameStatus !== "playing" || !solution) {
 				return;
 			}
 
@@ -364,20 +362,8 @@ export function GameShell({ dictionary }: GameShellProps) {
 				});
 			}
 		},
-		[
-			gameStatus,
-			handleSubmitGuess,
-			showDifficultyModal,
-			showLanding,
-			solution,
-			wordLength,
-		],
+		[gameStatus, handleSubmitGuess, showDifficultyModal, solution, wordLength],
 	);
-
-	const handleExperienceStart = useCallback(() => {
-		setShowLanding(false);
-		setShowDifficultyModal(true);
-	}, []);
 
 	useEffect(() => {
 		const listener = (event: KeyboardEvent) => {
@@ -434,11 +420,6 @@ export function GameShell({ dictionary }: GameShellProps) {
 
 	return (
 		<>
-			<LandingOverlay
-				visible={showLanding}
-				words={marqueeWords}
-				onStart={handleExperienceStart}
-			/>
 			<CursorTrail />
 			<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
 				<WordMarquee words={marqueeWords} />
