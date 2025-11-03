@@ -13,12 +13,12 @@ const KEYBOARD_ROWS = [
 ] as const;
 
 const keyStatusStyles: Record<LetterStatus, string> = {
-  pending: "border-border/30 bg-slate-800/70 text-slate-200",
+  pending: "border border-slate-400/60 bg-slate-900/25 text-slate-100/90 hover:bg-slate-800/70",
   correct:
-    "border-emerald-400/70 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_14px_36px_-22px_rgba(34,197,94,0.85)]",
+    "border border-emerald-500/70 bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-white shadow-[0_18px_36px_-18px_rgba(34,197,94,0.8)]",
   present:
-    "border-amber-400/70 bg-gradient-to-br from-amber-300 to-amber-500 text-slate-900 shadow-[0_14px_36px_-22px_rgba(251,191,36,0.85)]",
-  absent: "border-slate-600 bg-slate-800 text-slate-400",
+    "border border-amber-400/70 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-900 shadow-[0_18px_36px_-18px_rgba(251,191,36,0.75)]",
+  absent: "border border-slate-300/70 bg-slate-600/85 text-slate-50 hover:bg-slate-600",
 };
 
 type KeyboardProps = {

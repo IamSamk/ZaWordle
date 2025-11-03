@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { motion } from "framer-motion";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { Difficulty } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const difficultyMeta: Record<
   Difficulty,
@@ -66,15 +67,22 @@ export function DifficultyDialog({
 
             return (
               <Fragment key={difficulty}>
-                <motion.button
-                  type="button"
+                <motion.div
+                  role="button"
+                  tabIndex={0}
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay, duration: 0.35, ease: "easeOut" }}
                   onClick={() => onSelect(difficulty)}
-                  className="group relative h-full"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(difficulty);
+                    }
+                  }}
+                  className="group relative h-full cursor-pointer outline-none"
                 >
-                  <Card className="h-full overflow-hidden border-border/40 bg-gradient-to-br from-background/95 to-background/70 transition-transform duration-200 ease-out group-hover:-translate-y-1">
+                  <Card className="h-full overflow-hidden border-border/40 bg-gradient-to-br from-background/95 to-background/70 transition-transform duration-200 ease-out group-hover:-translate-y-1 group-focus:-translate-y-1 group-focus:ring-2 group-focus:ring-emerald-400/60">
                     <CardHeader className="relative space-y-2">
                       <div
                         className={`pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.accent}`}
@@ -87,12 +95,17 @@ export function DifficultyDialog({
                     </CardHeader>
                     <CardContent className="mt-auto flex items-center justify-between text-sm text-muted-foreground/90">
                       <span>{counts[difficulty]} curated words</span>
-                      <Button size="sm" variant="outline" className="pointer-events-none border-border/40">
+                      <span
+                        className={cn(
+                          buttonVariants({ size: "sm", variant: "outline" }),
+                          "pointer-events-none border-border/40",
+                        )}
+                      >
                         Play
-                      </Button>
+                      </span>
                     </CardContent>
                   </Card>
-                </motion.button>
+                </motion.div>
               </Fragment>
             );
           })}

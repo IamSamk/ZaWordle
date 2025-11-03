@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 const ROW_TRANSITION = { duration: 0.25, ease: "easeOut" };
 
 const statusStyles: Record<LetterStatus, string> = {
-  pending: "border-slate-600/50 bg-slate-900/40 text-slate-200/80",
+  pending: "border-slate-400/50 bg-slate-900/25 text-slate-100/85",
   correct:
     "border-emerald-500/70 bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-white shadow-[0_20px_52px_-28px_rgba(34,197,94,0.95)]",
   present:
     "border-amber-400/70 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-900 shadow-[0_20px_52px_-28px_rgba(251,191,36,0.9)]",
-  absent: "border-slate-700 bg-slate-800 text-slate-400",
+  absent: "border-slate-300/70 bg-slate-700/90 text-slate-50",
 };
 
 type BoardProps = {

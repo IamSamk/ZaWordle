@@ -28,9 +28,17 @@ type DefinitionDialogProps = {
   word: string;
   definition: string;
   onPlayAgain: () => void;
+  onChangeMode: () => void;
 };
 
-export function DefinitionDialog({ open, status, word, definition, onPlayAgain }: DefinitionDialogProps) {
+export function DefinitionDialog({
+  open,
+  status,
+  word,
+  definition,
+  onPlayAgain,
+  onChangeMode,
+}: DefinitionDialogProps) {
   const content = statusCopy[status];
 
   return (
@@ -61,8 +69,8 @@ export function DefinitionDialog({ open, status, word, definition, onPlayAgain }
           </p>
         </motion.div>
         <div className="flex items-center justify-end gap-3">
-          <Button variant="ghost" onClick={onPlayAgain}>
-            Try another word
+          <Button variant="ghost" onClick={onChangeMode}>
+            Try another game mode
           </Button>
           <Button onClick={onPlayAgain} className="bg-foreground text-background hover:bg-foreground/90">
             Play again

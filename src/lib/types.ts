@@ -5,6 +5,7 @@ export type WordEntry = {
   definition: string;
   length: number;
   difficulty: Difficulty;
+  rank: number;
 };
 
 export type DictionaryBuckets = Record<Difficulty, WordEntry[]>;

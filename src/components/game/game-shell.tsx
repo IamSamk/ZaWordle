@@ -4,11 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 import { Board } from "@/components/game/board";
+import { CursorTrail } from "@/components/game/cursor-trail";
 import { DefinitionDialog } from "@/components/game/definition-dialog";
 import { DifficultyDialog } from "@/components/game/difficulty-dialog";
 import { HeroTitle } from "@/components/game/hero-title";
+import { LandingOverlay } from "@/components/game/landing-overlay";
 import { Keyboard } from "@/components/game/keyboard";
 import { StreakCard } from "@/components/game/streak-card";
+import { WordMarquee } from "@/components/game/word-marquee";
 import { useToast } from "@/hooks/use-toast";
 import type {
 	DictionaryBuckets,
@@ -110,34 +113,45 @@ export function GameShell({ dictionary }: GameShellProps) {
 	const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
 	const [solution, setSolution] = useState<WordEntry | null>(null);
 	const [gameStatus, setGameStatus] = useState<GameStatus>("idle");
+	const [showLanding, setShowLanding] = useState(true);
 	const [evaluations, setEvaluations] = useState<GuessEvaluation[]>([]);
 	const [currentGuess, setCurrentGuess] = useState("");
-	const [showDifficultyModal, setShowDifficultyModal] = useState(true);
+	const [showDifficultyModal, setShowDifficultyModal] = useState(false);
 	const [invalidRow, setInvalidRow] = useState<number | null>(null);
-	const [streak, setStreak] = useState<StreakState>(() => {
+	const [streak, setStreak] = useState<StreakState>(defaultStreak);
+
+	const invalidRowTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hasHydratedStreak = useRef(false);
+
+	useEffect(() => {
 		if (typeof window === "undefined") {
-			return defaultStreak;
+			return;
 		}
 
 		try {
 			const stored = window.localStorage.getItem(STREAK_STORAGE_KEY);
 			if (!stored) {
-				return defaultStreak;
+				return;
 			}
 
 			const parsed = JSON.parse(stored) as Partial<StreakState>;
-
-			return {
+			const next: StreakState = {
 				current: typeof parsed.current === "number" ? parsed.current : 0,
 				best: typeof parsed.best === "number" ? parsed.best : 0,
 			};
+
+			window.requestAnimationFrame(() => {
+				if (hasHydratedStreak.current) {
+					return;
+				}
+
+				hasHydratedStreak.current = true;
+				setStreak(next);
+			});
 		} catch (error) {
 			console.warn("Failed to restore streak from storage", error);
-			return defaultStreak;
 		}
-	});
-
-		const invalidRowTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	}, []);
 
 	const counts = useMemo(
 		() => ({
@@ -147,6 +161,24 @@ export function GameShell({ dictionary }: GameShellProps) {
 		}),
 		[dictionary],
 	);
+
+	const marqueeWords = useMemo(() => {
+		const combined = [...dictionary.easy, ...dictionary.medium, ...dictionary.hard];
+		if (combined.length === 0) {
+			return [] as string[];
+		}
+
+		const unique = Array.from(new Set(combined.map(({ word }) => word.toUpperCase())));
+		const limit = Math.min(80, unique.length);
+		const step = Math.max(1, Math.floor(unique.length / limit));
+		const selection: string[] = [];
+
+		for (let index = 0; index < limit; index += 1) {
+			selection.push(unique[(index * step) % unique.length]);
+		}
+
+		return selection;
+	}, [dictionary]);
 
 	const allWordsSet = useMemo(
 		() =>
@@ -158,8 +190,15 @@ export function GameShell({ dictionary }: GameShellProps) {
 		[dictionary],
 	);
 
-	const wordLength =
-		solution?.length ?? (difficulty === "hard" ? 7 : difficulty === "medium" ? 6 : 5);
+	const fallbackWordLength = difficulty === "hard" ? 7 : difficulty === "medium" ? 5 : 5;
+	const wordLength = solution?.length ?? fallbackWordLength;
+	const wordLengthDescription = solution?.length
+		? `${solution.length}-letter word`
+		: difficulty === "hard"
+			? "6-8 letter words"
+			: difficulty === "medium"
+				? "5-letter words"
+				: "4-5 letter words";
 
 	const letterStatuses = useMemo(() => {
 		const map = new Map<string, LetterStatus>();
@@ -222,6 +261,7 @@ export function GameShell({ dictionary }: GameShellProps) {
 			setSolution(candidate);
 			setEvaluations([]);
 			setCurrentGuess("");
+					setInvalidRow(null);
 			setGameStatus("playing");
 			setShowDifficultyModal(false);
 		},
@@ -274,6 +314,7 @@ export function GameShell({ dictionary }: GameShellProps) {
 
 		setEvaluations(nextEvaluations);
 		setCurrentGuess("");
+			setInvalidRow(null);
 
 		if (normalized === solution.word) {
 			updateStreak(true);
@@ -299,7 +340,7 @@ export function GameShell({ dictionary }: GameShellProps) {
 
 	const handleVirtualKey = useCallback(
 		(key: string) => {
-			if (showDifficultyModal || gameStatus !== "playing" || !solution) {
+			if (showLanding || showDifficultyModal || gameStatus !== "playing" || !solution) {
 				return;
 			}
 
@@ -323,8 +364,20 @@ export function GameShell({ dictionary }: GameShellProps) {
 				});
 			}
 		},
-		[gameStatus, handleSubmitGuess, showDifficultyModal, solution, wordLength],
+		[
+			gameStatus,
+			handleSubmitGuess,
+			showDifficultyModal,
+			showLanding,
+			solution,
+			wordLength,
+		],
 	);
+
+	const handleExperienceStart = useCallback(() => {
+		setShowLanding(false);
+		setShowDifficultyModal(true);
+	}, []);
 
 	useEffect(() => {
 		const listener = (event: KeyboardEvent) => {
@@ -354,6 +407,21 @@ export function GameShell({ dictionary }: GameShellProps) {
 		}
 	}, [difficulty, startGame]);
 
+		const handleChangeMode = useCallback(() => {
+			if (invalidRowTimeout.current) {
+				clearTimeout(invalidRowTimeout.current);
+				invalidRowTimeout.current = null;
+			}
+
+			setDifficulty(null);
+			setSolution(null);
+			setEvaluations([]);
+			setCurrentGuess("");
+			setInvalidRow(null);
+			setGameStatus("idle");
+			setShowDifficultyModal(true);
+		}, []);
+
 	const showDefinition = gameStatus === "won" || gameStatus === "lost";
 
 		useEffect(() => {
@@ -365,7 +433,15 @@ export function GameShell({ dictionary }: GameShellProps) {
 		}, []);
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
+		<>
+			<LandingOverlay
+				visible={showLanding}
+				words={marqueeWords}
+				onStart={handleExperienceStart}
+			/>
+			<CursorTrail />
+			<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
+				<WordMarquee words={marqueeWords} />
 			<motion.div
 				aria-hidden
 				className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_55%)]"
@@ -406,7 +482,7 @@ export function GameShell({ dictionary }: GameShellProps) {
 								<span>Select a difficulty to start playing.</span>
 							)}
 							<span className="ml-2 text-muted-foreground/70">
-								{wordLength}-letter words · {MAX_ATTEMPTS} attempts
+								{wordLengthDescription} · {MAX_ATTEMPTS} attempts
 							</span>
 						</motion.div>
 					</div>
@@ -442,8 +518,10 @@ export function GameShell({ dictionary }: GameShellProps) {
 					word={solution.word}
 					definition={solution.definition}
 					onPlayAgain={handlePlayAgain}
+							onChangeMode={handleChangeMode}
 				/>
 			)}
-		</div>
+			</div>
+		</>
 	);
 }
