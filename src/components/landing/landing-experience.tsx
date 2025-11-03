@@ -5,18 +5,109 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CursorTrail } from "@/components/game/cursor-trail";
+import { SakuraField } from "@/components/landing/sakura-field";
 
-const FALLBACK_WORDS = [
-  "LEXICON",
-  "WORDLE",
-  "SYNTAX",
-  "PHRASE",
-  "SCRIBE",
-  "VERBATIM",
-  "CIPHER",
-  "MORPHEME",
-  "PARSE",
-  "SEMANTIC",
+const CURATED_WORDS = [
+  "AETHER",
+  "BEACON",
+  "BRIGHT",
+  "CALMER",
+  "CHERISH",
+  "CLARITY",
+  "COMFORT",
+  "COURAGE",
+  "CRYSTAL",
+  "DAZZLE",
+  "DELIGHT",
+  "DISCERN",
+  "DREAMER",
+  "ELEGANT",
+  "EMBLEM",
+  "EMPATHY",
+  "ENCHANT",
+  "ENERGY",
+  "ESSENCE",
+  "ETHEREAL",
+  "EVENING",
+  "EVIDENT",
+  "FASHION",
+  "FESTIVE",
+  "FLIGHT",
+  "FLOWERS",
+  "FONDLY",
+  "GALAXY",
+  "GARNET",
+  "GENTLE",
+  "GLOWING",
+  "GOLDEN",
+  "GRACEFUL",
+  "HARMONY",
+  "HEALER",
+  "HEAVEN",
+  "INSPIRE",
+  "JASMINE",
+  "JOURNEY",
+  "KINDLE",
+  "LAUREL",
+  "LAVISH",
+  "LILACS",
+  "LUCENT",
+  "LUMENS",
+  "LUSTER",
+  "MAGICAL",
+  "MARVEL",
+  "MEADOW",
+  "MERCURY",
+  "MIRAGE",
+  "MOMENT",
+  "MORNING",
+  "MOSAIC",
+  "NEBULA",
+  "NIMBLE",
+  "NOBLER",
+  "NURTURE",
+  "OASIS",
+  "OCEANS",
+  "ORACLE",
+  "ORCHID",
+  "OVERTURE",
+  "PEARLS",
+  "PLACID",
+  "POLISH",
+  "PURELY",
+  "RADIANT",
+  "REFINE",
+  "REVIVE",
+  "RHYTHM",
+  "SERENE",
+  "SHIMMER",
+  "SILKEN",
+  "SILVER",
+  "SINCERE",
+  "SKYLINE",
+  "SOFTLY",
+  "SOLACE",
+  "SPARKLE",
+  "SPRING",
+  "STARRY",
+  "SUMMER",
+  "SUNBEAM",
+  "SUPPLE",
+  "SVELTE",
+  "SWEETLY",
+  "THRIVE",
+  "TRANQUIL",
+  "TWILIGHT",
+  "UNITY",
+  "UPLIFT",
+  "VELVET",
+  "VERDANT",
+  "VIBRANT",
+  "VISION",
+  "WHISPER",
+  "WILLOW",
+  "WONDER",
+  "ZEPHYR",
 ];
 
 const createSeededGenerator = (seed: number) => {
@@ -49,7 +140,7 @@ type FloatingWord = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-const BLOCKED_WORDS = ["BREED", "BREEDER", "BREEDERS"];
+const BLOCKED_WORDS = ["BREED", "BREEDER", "BREEDERS", "POTTY", "SCUM", "TRASH", "SLUR", "SWINE"];
 
 export function LandingExperience({ words }: LandingExperienceProps) {
   const router = useRouter();
@@ -61,20 +152,54 @@ export function LandingExperience({ words }: LandingExperienceProps) {
     router.prefetch("/play");
   }, [router]);
 
-  const floatingWords = useMemo(() => {
-    const source = (words.length ? words : FALLBACK_WORDS).filter((candidate) => {
-      const normalized = candidate.toUpperCase();
-      return !BLOCKED_WORDS.some((blocked) => normalized.includes(blocked));
-    });
+  const sanitizedExtras = useMemo(() => {
+    const seen = new Set(CURATED_WORDS);
+    const extras: string[] = [];
 
-    if (!source.length) {
-      source.push(...FALLBACK_WORDS);
+    for (const entry of words) {
+      const normalized = entry.toUpperCase();
+      if (normalized.length < 4) {
+        continue;
+      }
+
+      if (BLOCKED_WORDS.some((blocked) => normalized.includes(blocked))) {
+        continue;
+      }
+
+      if (seen.has(normalized)) {
+        continue;
+      }
+
+      seen.add(normalized);
+      extras.push(normalized);
+
+      if (extras.length >= 50) {
+        break;
+      }
     }
-    const limit = Math.min(48, source.length);
+
+    return extras;
+  }, [words]);
+
+  const floatingWords = useMemo(() => {
+    const generator = createSeededGenerator(2025);
+    const combined = CURATED_WORDS.concat(sanitizedExtras);
+
+    if (!combined.length) {
+      combined.push("WORDLE");
+    }
+
+    const shuffled = [...combined];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(generator() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const limit = Math.min(48, shuffled.length);
 
     return Array.from({ length: limit }).map((_, index) => {
-      const word = source[index % source.length];
-      const rand = createSeededGenerator(index * 97 + word.length * 31);
+      const word = shuffled[index % shuffled.length];
+      const rand = createSeededGenerator(index * 137 + word.length * 41);
       const left = rand() * 100;
       const top = rand() * 100;
       const translateX = (rand() - 0.5) * 360;
@@ -97,7 +222,7 @@ export function LandingExperience({ words }: LandingExperienceProps) {
         scale,
       } satisfies FloatingWord;
     });
-  }, [words]);
+  }, [sanitizedExtras]);
 
   const pointerVars = useMemo(
     () => ({
@@ -152,6 +277,8 @@ export function LandingExperience({ words }: LandingExperienceProps) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_50%,rgba(148,163,184,0.18),rgba(12,19,32,0.88))]"
       />
 
+  <SakuraField className="pointer-events-none absolute inset-0 opacity-60" />
+
       <div className="pointer-events-none absolute inset-0">
         {floatingWords.map((item) => (
           <motion.span
@@ -179,8 +306,8 @@ export function LandingExperience({ words }: LandingExperienceProps) {
         ))}
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center px-6 pb-24 pt-32 text-center">
-        <div className="flex flex-col items-center gap-10">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center px-6 pb-28 pt-36 text-center">
+        <div className="flex w-full flex-col items-center gap-12">
           <motion.h1
             ref={headingRef}
             style={{
