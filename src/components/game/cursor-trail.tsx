@@ -25,12 +25,26 @@ export function CursorTrail() {
   const [trail, setTrail] = useState<TrailItem[]>([]);
   const [pointer, setPointer] = useState<Pointer | null>(null);
   const counterRef = useRef(0);
-  const mountedRef = useRef(true);
+  const mountedRef = useRef(false);
   const lastTrailRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
+
+    let frame: number | null = null;
+
+    if (typeof window !== "undefined") {
+      frame = window.requestAnimationFrame(() => {
+        if (mountedRef.current) {
+          setPointer({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+        }
+      });
+    }
+
     return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
       mountedRef.current = false;
     };
   }, []);
@@ -61,7 +75,7 @@ export function CursorTrail() {
       return;
     }
 
-    const handlePointerUpdate = (event: PointerEvent) => {
+    const handlePointerUpdate = (event: PointerEvent | MouseEvent) => {
       if (!mountedRef.current) {
         return;
       }
@@ -81,11 +95,13 @@ export function CursorTrail() {
     window.addEventListener("pointermove", handlePointerUpdate, passiveOptions);
     window.addEventListener("pointerdown", handlePointerUpdate, passiveOptions);
     window.addEventListener("pointerenter", handlePointerUpdate, passiveOptions);
+    window.addEventListener("mousemove", handlePointerUpdate, passiveOptions);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerUpdate, passiveOptions);
       window.removeEventListener("pointerdown", handlePointerUpdate, passiveOptions);
       window.removeEventListener("pointerenter", handlePointerUpdate, passiveOptions);
+      window.removeEventListener("mousemove", handlePointerUpdate, passiveOptions);
     };
   }, [pushTrailItem]);
 
