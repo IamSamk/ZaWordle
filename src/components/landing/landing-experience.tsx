@@ -49,6 +49,8 @@ type FloatingWord = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+const BLOCKED_WORDS = ["BREED", "BREEDER", "BREEDERS"];
+
 export function LandingExperience({ words }: LandingExperienceProps) {
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -60,7 +62,14 @@ export function LandingExperience({ words }: LandingExperienceProps) {
   }, [router]);
 
   const floatingWords = useMemo(() => {
-    const source = words.length ? words : FALLBACK_WORDS;
+    const source = (words.length ? words : FALLBACK_WORDS).filter((candidate) => {
+      const normalized = candidate.toUpperCase();
+      return !BLOCKED_WORDS.some((blocked) => normalized.includes(blocked));
+    });
+
+    if (!source.length) {
+      source.push(...FALLBACK_WORDS);
+    }
     const limit = Math.min(48, source.length);
 
     return Array.from({ length: limit }).map((_, index) => {

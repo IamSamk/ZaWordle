@@ -7,7 +7,7 @@ const TRAIL_LETTERS = "WORDLEOPABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const MAX_TRAIL_ITEMS = 14;
 const ITEM_LIFETIME_MS = 520;
 const MIN_TRAIL_INTERVAL_MS = 26;
-const SPHERE_SIZE = 16;
+const SPHERE_SIZE = 18;
 
 type TrailItem = {
   id: number;
@@ -29,6 +29,7 @@ export function CursorTrail() {
   const lastTrailRef = useRef(0);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
@@ -103,7 +104,7 @@ export function CursorTrail() {
       {pointer ? (
         <motion.div
           key="cursor-sphere"
-          className="absolute h-4 w-4 rounded-full bg-[radial-gradient(circle_at_32%_32%,rgba(255,255,255,0.97)0%,rgba(248,250,252,0.85)42%,rgba(148,163,184,0.5)72%,rgba(59,130,246,0.35)100%)] shadow-[0_0_18px_rgba(148,163,184,0.45)]"
+          className="absolute h-[18px] w-[18px] rounded-full bg-[radial-gradient(circle_at_28%_30%,rgba(255,255,255,0.98)0%,rgba(255,255,255,0.82)35%,rgba(208,213,221,0.35)68%,rgba(125,211,252,0.35)90%,rgba(37,99,235,0.45)100%)] shadow-[0_0_28px_rgba(148,163,184,0.5)]"
           style={sphereStyle}
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
