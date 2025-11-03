@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CursorTrail } from "@/components/game/cursor-trail";
-import { SakuraField } from "@/components/landing/sakura-field";
+import { LetterShower } from "@/components/landing/letter-shower";
 
 const CURATED_WORDS = [
   "AETHER",
@@ -277,7 +277,7 @@ export function LandingExperience({ words }: LandingExperienceProps) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_50%,rgba(148,163,184,0.18),rgba(12,19,32,0.88))]"
       />
 
-  <SakuraField className="pointer-events-none absolute inset-0 opacity-60" />
+  <LetterShower className="pointer-events-none absolute inset-0" />
 
       <div className="pointer-events-none absolute inset-0">
         {floatingWords.map((item) => (
