@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WordleOP
 
-## Getting Started
+A cinematic take on the daily word puzzle. WordleOP opens with a luminous landing sequence—glowing cursor, flowing glyph shower, and metallic title—before flowing into the streak-focused gameplay shell.
 
-First, run the development server:
+## Highlights
+
+* **Immersive Landing Canvas** – Tailwind, framer-motion, and custom gradients layer the hero with a curated 100-word skyline and a responsive hero headline.
+* **Letter Shower** – A Three.js shader turns an atlas of glyphs into rotating, drifting particles that feel like typographic leaves.
+* **Reactive Cursor** – Dual-orb cursor blooms over interactive elements, emits a soft glow, and leaves behind a trail of characters.
+* **Refined Word Pool** – Landing copy draws from a handpicked vocabulary with filtering rules that keep the ambience elegant.
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000` to experience the animated landing page. The game itself lives at `/play` and is accessible via the **Start Game** CTA.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/
+    page.tsx         # Cinematic landing page
+    play/page.tsx    # Game shell entry point
+  components/
+    game/
+      cursor-trail.tsx        # Glowing dual-orb cursor and trail
+    landing/
+      landing-experience.tsx  # Hero layout, word skyline, CTA
+      letter-shower.tsx       # WebGL particle system for the drift
+```
 
-## Learn More
+## Signature Animations
 
-To learn more about Next.js, take a look at the following resources:
+| Element | Stack | Description |
+| --- | --- | --- |
+| Hero headline | framer-motion + gradient masks | Pointer-tracked shimmer across the "WORDLE" logotype |
+| Letter shower | Three.js ShaderMaterial | Point sprites sourced from a canvas atlas for crisp glyph particles |
+| Cursor | framer-motion springs | White orb with pulsing glow, hover bloom, and alphabet trail |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the Turbopack development server |
+| `pnpm build` | Generate a production build |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint over the project |
 
-## Deploy on Vercel
+## Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS and shadcn/ui primitives
+- framer-motion for choreography
+- Three.js for the glyph particle field
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Run `pnpm lint` to ensure code quality.
+3. Include screenshots or short clips when altering visuals so reviewers can see the landing experience.
+
+## Acknowledgements
+
+- Helvetiker font geometry courtesy of the official Three.js examples.
+- Visual inspiration gathered from modern Wordle fan art and ambient typography studies.
