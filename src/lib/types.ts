@@ -18,3 +18,5 @@ export type GuessEvaluation = {
     status: LetterStatus;
   }>;
 };
+
+export type TimerDuration = 60 | 180 | 300 | typeof Infinity;
