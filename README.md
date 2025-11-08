@@ -8,7 +8,7 @@ A cinematic take on the daily word puzzle. WordleOP opens with a luminous landin
 * **Letter Shower** – A Three.js shader turns an atlas of glyphs into rotating, drifting particles that feel like typographic leaves.
 * **Reactive Cursor** – Dual-orb cursor blooms over interactive elements, emits a soft glow, and leaves behind a trail of characters.
 * **Refined Word Pool** – Landing copy draws from a handpicked vocabulary with filtering rules that keep the ambience elegant.
-
+* **Timer** - A timer to track your speed and challenge your friends.
 ## Quick Start
 
 ```bash

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import type { Difficulty } from "@/lib/types";
+import type { Difficulty, TimerDuration } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const difficultyMeta: Record<
@@ -36,11 +36,20 @@ const difficultyMeta: Record<
   },
 };
 
+const timerOptions: { duration: TimerDuration; label: string }[] = [
+  { duration: 60, label: "1m" },
+  { duration: 180, label: "3m" },
+  { duration: 300, label: "5m" },
+  { duration: Infinity, label: "∞" },
+];
+
 type DifficultyDialogProps = {
   open: boolean;
   onClose: () => void;
   onSelect: (difficulty: Difficulty) => void;
   counts: Record<Difficulty, number>;
+  selectedTimer: TimerDuration;
+  onTimerChange: (duration: TimerDuration) => void;
 };
 
 export function DifficultyDialog({
@@ -48,14 +57,38 @@ export function DifficultyDialog({
   onClose,
   onSelect,
   counts,
+  selectedTimer,
+  onTimerChange,
 }: DifficultyDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? onClose() : null)}>
       <DialogContent className="max-w-3xl border-none bg-background/90 p-8 backdrop-blur-xl">
         <DialogHeader className="gap-3">
-          <DialogTitle className="text-3xl font-semibold tracking-tight">
-            Pick your challenge
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-3xl font-semibold tracking-tight">
+              Pick your challenge
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">Timer:</p>
+              <div className="flex items-center gap-1 rounded-lg bg-background/70 p-1">
+                {timerOptions.map(({ duration, label }) => (
+                  <button
+                    key={duration}
+                    type="button"
+                    onClick={() => onTimerChange(duration)}
+                    className={cn(
+                      "rounded-md px-3 py-1 text-sm font-medium transition-colors",
+                      selectedTimer === duration
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           <DialogDescription className="text-base text-muted-foreground">
             Difficulty adjusts word length and rarity. Your streak only grows on wins.
           </DialogDescription>

@@ -13,11 +13,12 @@ import { StreakCard } from "@/components/game/streak-card";
 import { WordMarquee } from "@/components/game/word-marquee";
 import { useToast } from "@/hooks/use-toast";
 import type {
-	DictionaryBuckets,
-	Difficulty,
-	GuessEvaluation,
-	LetterStatus,
-	WordEntry,
+  DictionaryBuckets,
+  Difficulty,
+  GuessEvaluation,
+  LetterStatus,
+  TimerDuration,
+  WordEntry,
 } from "@/lib/types";
 
 const MAX_ATTEMPTS = 6;
@@ -25,484 +26,535 @@ const STREAK_STORAGE_KEY = "wordleop:streak";
 const LETTER_REGEX = /^[a-z]$/;
 
 const statusPriority: Record<LetterStatus, number> = {
-	pending: 0,
-	absent: 1,
-	present: 2,
-	correct: 3,
+  pending: 0,
+  absent: 1,
+  present: 2,
+  correct: 3,
 };
 
 type StreakState = {
-	current: number;
-	best: number;
+  current: number;
+  best: number;
 };
 
 type GameStatus = "idle" | "playing" | "won" | "lost";
 
 type GameShellProps = {
-	dictionary: DictionaryBuckets;
+  dictionary: DictionaryBuckets;
 };
 
 const defaultStreak: StreakState = { current: 0, best: 0 };
 
 const evaluateGuess = (guess: string, solution: string): GuessEvaluation => {
-	const length = solution.length;
-	const statuses: LetterStatus[] = Array.from({ length }, () => "absent");
-	const solutionChars = solution.split("");
-	const guessChars = guess.split("");
-	const remaining = new Map<string, number>();
+  const length = solution.length;
+  const statuses: LetterStatus[] = Array.from({ length }, () => "absent");
+  const solutionChars = solution.split("");
+  const guessChars = guess.split("");
+  const remaining = new Map<string, number>();
 
-	for (let index = 0; index < length; index += 1) {
-		if (guessChars[index] === solutionChars[index]) {
-			statuses[index] = "correct";
-		} else {
-			const letter = solutionChars[index];
-			remaining.set(letter, (remaining.get(letter) ?? 0) + 1);
-		}
-	}
+  for (let index = 0; index < length; index += 1) {
+    if (guessChars[index] === solutionChars[index]) {
+      statuses[index] = "correct";
+    } else {
+      const letter = solutionChars[index];
+      remaining.set(letter, (remaining.get(letter) ?? 0) + 1);
+    }
+  }
 
-	for (let index = 0; index < length; index += 1) {
-		if (statuses[index] === "correct") {
-			continue;
-		}
+  for (let index = 0; index < length; index += 1) {
+    if (statuses[index] === "correct") {
+      continue;
+    }
 
-		const letter = guessChars[index];
-		const allowance = remaining.get(letter) ?? 0;
+    const letter = guessChars[index];
+    const allowance = remaining.get(letter) ?? 0;
 
-		if (allowance > 0) {
-			statuses[index] = "present";
-			remaining.set(letter, allowance - 1);
-		} else {
-			statuses[index] = "absent";
-		}
-	}
+    if (allowance > 0) {
+      statuses[index] = "present";
+      remaining.set(letter, allowance - 1);
+    } else {
+      statuses[index] = "absent";
+    }
+  }
 
-	return {
-		letters: guessChars.map((letter, index) => ({
-			letter,
-			status: statuses[index],
-		})),
-	};
+  return {
+    letters: guessChars.map((letter, index) => ({
+      letter,
+      status: statuses[index],
+    })),
+  };
 };
 
 const selectRandomWord = (words: WordEntry[], exclude?: string): WordEntry => {
-	if (words.length === 0) {
-		throw new Error("No words available to select");
-	}
+  if (words.length === 0) {
+    throw new Error("No words available to select");
+  }
 
-	if (words.length === 1) {
-		return words[0];
-	}
+  if (words.length === 1) {
+    return words[0];
+  }
 
-	let candidate = words[Math.floor(Math.random() * words.length)];
+  let candidate = words[Math.floor(Math.random() * words.length)];
 
-	if (exclude && words.length > 1) {
-		let safeguard = 0;
-		while (candidate.word === exclude && safeguard < 5) {
-			candidate = words[Math.floor(Math.random() * words.length)];
-			safeguard += 1;
-		}
-	}
+  if (exclude && words.length > 1) {
+    let safeguard = 0;
+    while (candidate.word === exclude && safeguard < 5) {
+      candidate = words[Math.floor(Math.random() * words.length)];
+      safeguard += 1;
+    }
+  }
 
-	return candidate;
+  return candidate;
 };
 
 export function GameShell({ dictionary }: GameShellProps) {
-	const { toast } = useToast();
+  const { toast } = useToast();
 
-	const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
-	const [solution, setSolution] = useState<WordEntry | null>(null);
-	const [gameStatus, setGameStatus] = useState<GameStatus>("idle");
-	const [evaluations, setEvaluations] = useState<GuessEvaluation[]>([]);
-	const [currentGuess, setCurrentGuess] = useState("");
-	const [showDifficultyModal, setShowDifficultyModal] = useState(true);
-	const [invalidRow, setInvalidRow] = useState<number | null>(null);
-	const [streak, setStreak] = useState<StreakState>(defaultStreak);
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  const [solution, setSolution] = useState<WordEntry | null>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus>("idle");
+  const [evaluations, setEvaluations] = useState<GuessEvaluation[]>([]);
+  const [currentGuess, setCurrentGuess] = useState("");
+  const [showDifficultyModal, setShowDifficultyModal] = useState(true);
+  const [invalidRow, setInvalidRow] = useState<number | null>(null);
+  const [streak, setStreak] = useState<StreakState>(defaultStreak);
+  const [selectedTimer, setSelectedTimer] = useState<TimerDuration>(Infinity);
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
-	const invalidRowTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const hasHydratedStreak = useRef(false);
+  const invalidRowTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasHydratedStreak = useRef(false);
 
-	useEffect(() => {
-		if (typeof window === "undefined") {
-			return;
-		}
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
-		try {
-			const stored = window.localStorage.getItem(STREAK_STORAGE_KEY);
-			if (!stored) {
-				return;
-			}
+    try {
+      const stored = window.localStorage.getItem(STREAK_STORAGE_KEY);
+      if (!stored) {
+        return;
+      }
 
-			const parsed = JSON.parse(stored) as Partial<StreakState>;
-			const next: StreakState = {
-				current: typeof parsed.current === "number" ? parsed.current : 0,
-				best: typeof parsed.best === "number" ? parsed.best : 0,
-			};
+      const parsed = JSON.parse(stored) as Partial<StreakState>;
+      const next: StreakState = {
+        current: typeof parsed.current === "number" ? parsed.current : 0,
+        best: typeof parsed.best === "number" ? parsed.best : 0,
+      };
 
-			window.requestAnimationFrame(() => {
-				if (hasHydratedStreak.current) {
-					return;
-				}
+      window.requestAnimationFrame(() => {
+        if (hasHydratedStreak.current) {
+          return;
+        }
 
-				hasHydratedStreak.current = true;
-				setStreak(next);
-			});
-		} catch (error) {
-			console.warn("Failed to restore streak from storage", error);
-		}
-	}, []);
+        hasHydratedStreak.current = true;
+        setStreak(next);
+      });
+    } catch (error) {
+      console.warn("Failed to restore streak from storage", error);
+    }
+  }, []);
 
-	const counts = useMemo(
-		() => ({
-			easy: dictionary.easy.length,
-			medium: dictionary.medium.length,
-			hard: dictionary.hard.length,
-		}),
-		[dictionary],
-	);
+  const counts = useMemo(
+    () => ({
+      easy: dictionary.easy.length,
+      medium: dictionary.medium.length,
+      hard: dictionary.hard.length,
+    }),
+    [dictionary],
+  );
 
-	const marqueeWords = useMemo(() => {
-		const combined = [...dictionary.easy, ...dictionary.medium, ...dictionary.hard];
-		if (combined.length === 0) {
-			return [] as string[];
-		}
+  const marqueeWords = useMemo(() => {
+    const combined = [...dictionary.easy, ...dictionary.medium, ...dictionary.hard];
+    if (combined.length === 0) {
+      return [] as string[];
+    }
 
-		const unique = Array.from(new Set(combined.map(({ word }) => word.toUpperCase())));
-		const limit = Math.min(80, unique.length);
-		const step = Math.max(1, Math.floor(unique.length / limit));
-		const selection: string[] = [];
+    const unique = Array.from(new Set(combined.map(({ word }) => word.toUpperCase())));
+    const limit = Math.min(80, unique.length);
+    const step = Math.max(1, Math.floor(unique.length / limit));
+    const selection: string[] = [];
 
-		for (let index = 0; index < limit; index += 1) {
-			selection.push(unique[(index * step) % unique.length]);
-		}
+    for (let index = 0; index < limit; index += 1) {
+      selection.push(unique[(index * step) % unique.length]);
+    }
 
-		return selection;
-	}, [dictionary]);
+    return selection;
+  }, [dictionary]);
 
-	const allWordsSet = useMemo(
-		() =>
-			new Set(
-				[...dictionary.easy, ...dictionary.medium, ...dictionary.hard].map(
-					({ word }) => word,
-				),
-			),
-		[dictionary],
-	);
+  const allWordsSet = useMemo(
+    () =>
+      new Set(
+        [...dictionary.easy, ...dictionary.medium, ...dictionary.hard].map(
+          ({ word }) => word,
+        ),
+      ),
+    [dictionary],
+  );
 
-	const fallbackWordLength = difficulty === "hard" ? 7 : difficulty === "medium" ? 5 : 5;
-	const wordLength = solution?.length ?? fallbackWordLength;
-	const wordLengthDescription = solution?.length
-		? `${solution.length}-letter word`
-		: difficulty === "hard"
-			? "6-8 letter words"
-			: difficulty === "medium"
-				? "5-letter words"
-				: "4-5 letter words";
+  const fallbackWordLength = difficulty === "hard" ? 7 : difficulty === "medium" ? 5 : 5;
+  const wordLength = solution?.length ?? fallbackWordLength;
+  const wordLengthDescription = solution?.length
+    ? `${solution.length}-letter word`
+    : difficulty === "hard"
+      ? "6-8 letter words"
+      : difficulty === "medium"
+        ? "5-letter words"
+        : "4-5 letter words";
 
-	const letterStatuses = useMemo(() => {
-		const map = new Map<string, LetterStatus>();
+  const letterStatuses = useMemo(() => {
+    const map = new Map<string, LetterStatus>();
 
-		evaluations.forEach((evaluation) => {
-			evaluation.letters.forEach(({ letter, status }) => {
-				const existing = map.get(letter);
-				if (!existing || statusPriority[status] > statusPriority[existing]) {
-					map.set(letter, status);
-				}
-			});
-		});
+    evaluations.forEach((evaluation) => {
+      evaluation.letters.forEach(({ letter, status }) => {
+        const existing = map.get(letter);
+        if (!existing || statusPriority[status] > statusPriority[existing]) {
+          map.set(letter, status);
+        }
+      });
+    });
 
-		return map;
-	}, [evaluations]);
+    return map;
+  }, [evaluations]);
 
-	const updateStreak = useCallback((won: boolean) => {
-		setStreak((previous) => {
-			const current = won ? previous.current + 1 : 0;
-			const best = won ? Math.max(previous.best, current) : previous.best;
-			const next: StreakState = { current, best };
+  const updateStreak = useCallback((won: boolean) => {
+    setStreak((previous) => {
+      const current = won ? previous.current + 1 : 0;
+      const best = won ? Math.max(previous.best, current) : previous.best;
+      const next: StreakState = { current, best };
 
-			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(next));
-			}
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(next));
+      }
 
-			return next;
-		});
-	}, []);
+      return next;
+    });
+  }, []);
 
-		const flagInvalidRow = useCallback(() => {
-			setInvalidRow(evaluations.length);
+  const flagInvalidRow = useCallback(() => {
+    setInvalidRow(evaluations.length);
 
-			if (invalidRowTimeout.current) {
-				clearTimeout(invalidRowTimeout.current);
-			}
+    if (invalidRowTimeout.current) {
+      clearTimeout(invalidRowTimeout.current);
+    }
 
-			invalidRowTimeout.current = setTimeout(() => {
-				setInvalidRow(null);
-				invalidRowTimeout.current = null;
-			}, 650);
-		}, [evaluations.length]);
+    invalidRowTimeout.current = setTimeout(() => {
+      setInvalidRow(null);
+      invalidRowTimeout.current = null;
+    }, 650);
+  }, [evaluations.length]);
 
-	const startGame = useCallback(
-		(level: Difficulty) => {
-			const pool = dictionary[level];
+  const startGame = useCallback(
+    (level: Difficulty) => {
+      const pool = dictionary[level];
 
-			if (!pool.length) {
-				toast({
-					title: "Add more words to dict.csv",
-					description: "We couldn't find words for that difficulty yet.",
-					variant: "destructive",
-				});
-				return;
-			}
+      if (!pool.length) {
+        toast({
+          title: "Add more words to dict.csv",
+          description: "We couldn't find words for that difficulty yet.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-			const candidate = selectRandomWord(pool, solution?.word);
+      const candidate = selectRandomWord(pool, solution?.word);
 
-			setDifficulty(level);
-			setSolution(candidate);
-			setEvaluations([]);
-			setCurrentGuess("");
-					setInvalidRow(null);
-			setGameStatus("playing");
-			setShowDifficultyModal(false);
-		},
-		[dictionary, solution, toast],
-	);
+      setDifficulty(level);
+      setSolution(candidate);
+      setEvaluations([]);
+      setCurrentGuess("");
+      setInvalidRow(null);
+      setGameStatus("playing");
+      setShowDifficultyModal(false);
 
-	const handleSubmitGuess = useCallback(() => {
-		if (!solution || gameStatus !== "playing") {
-			return;
-		}
+      if (selectedTimer !== Infinity) {
+        setRemainingTime(selectedTimer);
+      } else {
+        setRemainingTime(null);
+      }
+    },
+    [dictionary, solution, toast, selectedTimer],
+  );
 
-		if (currentGuess.length !== wordLength) {
-			toast({
-				title: "Not enough letters",
-				description: `This word needs ${wordLength} letters.`,
-				variant: "destructive",
-			});
-			flagInvalidRow();
-			return;
-		}
+  useEffect(() => {
+    if (gameStatus !== "playing" || remainingTime === null) {
+      return;
+    }
 
-		const normalized = currentGuess.toLowerCase();
+    if (remainingTime <= 0) {
+      updateStreak(false);
+      setGameStatus("lost");
+      toast({
+        title: "Time's up!",
+        description: "You ran out of time.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-		if (!allWordsSet.has(normalized)) {
-			toast({
-				title: "Word not found",
-				description: "Try a word from the curated dictionary.",
-				variant: "destructive",
-			});
-			flagInvalidRow();
-			return;
-		}
+    const timerId = setInterval(() => {
+      setRemainingTime((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
 
-		const alreadyTried = evaluations.some(
-			(evaluation) => evaluation.letters.map(({ letter }) => letter).join("") === normalized,
-		);
+    return () => clearInterval(timerId);
+  }, [gameStatus, remainingTime, updateStreak, toast]);
 
-		if (alreadyTried) {
-			toast({
-				title: "Already guessed",
-				description: "Give a different word a shot.",
-				variant: "destructive",
-			});
-			flagInvalidRow();
-			return;
-		}
+  const handleSubmitGuess = useCallback(() => {
+    if (!solution || gameStatus !== "playing") {
+      return;
+    }
 
-		const evaluation = evaluateGuess(normalized, solution.word);
-		const nextEvaluations = [...evaluations, evaluation];
+    if (currentGuess.length !== wordLength) {
+      toast({
+        title: "Not enough letters",
+        description: `This word needs ${wordLength} letters.`,
+        variant: "destructive",
+      });
+      flagInvalidRow();
+      return;
+    }
 
-		setEvaluations(nextEvaluations);
-		setCurrentGuess("");
-			setInvalidRow(null);
+    const normalized = currentGuess.toLowerCase();
 
-		if (normalized === solution.word) {
-			updateStreak(true);
-			setGameStatus("won");
-			return;
-		}
+    if (!allWordsSet.has(normalized)) {
+      toast({
+        title: "Word not found",
+        description: "Try a word from the curated dictionary.",
+        variant: "destructive",
+      });
+      flagInvalidRow();
+      return;
+    }
 
-		if (nextEvaluations.length >= MAX_ATTEMPTS) {
-			updateStreak(false);
-			setGameStatus("lost");
-		}
-	}, [
-		allWordsSet,
-		currentGuess,
-		evaluations,
-		gameStatus,
-			flagInvalidRow,
-		solution,
-		toast,
-		updateStreak,
-		wordLength,
-	]);
+    const alreadyTried = evaluations.some(
+      (evaluation) => evaluation.letters.map(({ letter }) => letter).join("") === normalized,
+    );
 
-	const handleVirtualKey = useCallback(
-		(key: string) => {
-			if (showDifficultyModal || gameStatus !== "playing" || !solution) {
-				return;
-			}
+    if (alreadyTried) {
+      toast({
+        title: "Already guessed",
+        description: "Give a different word a shot.",
+        variant: "destructive",
+      });
+      flagInvalidRow();
+      return;
+    }
 
-			if (key === "enter") {
-				handleSubmitGuess();
-				return;
-			}
+    const evaluation = evaluateGuess(normalized, solution.word);
+    const nextEvaluations = [...evaluations, evaluation];
 
-			if (key === "backspace") {
-				setCurrentGuess((previous) => previous.slice(0, -1));
-				return;
-			}
+    setEvaluations(nextEvaluations);
+    setCurrentGuess("");
+    setInvalidRow(null);
 
-			if (LETTER_REGEX.test(key)) {
-				setCurrentGuess((previous) => {
-					if (previous.length >= wordLength) {
-						return previous;
-					}
+    if (normalized === solution.word) {
+      updateStreak(true);
+      setGameStatus("won");
+      return;
+    }
 
-					return `${previous}${key}`;
-				});
-			}
-		},
-		[gameStatus, handleSubmitGuess, showDifficultyModal, solution, wordLength],
-	);
+    if (nextEvaluations.length >= MAX_ATTEMPTS) {
+      updateStreak(false);
+      setGameStatus("lost");
+    }
+  }, [
+    allWordsSet,
+    currentGuess,
+    evaluations,
+    gameStatus,
+    flagInvalidRow,
+    solution,
+    toast,
+    updateStreak,
+    wordLength,
+  ]);
 
-	useEffect(() => {
-		const listener = (event: KeyboardEvent) => {
-			const key = event.key.toLowerCase();
+  const handleVirtualKey = useCallback(
+    (key: string) => {
+      if (showDifficultyModal || gameStatus !== "playing" || !solution) {
+        return;
+      }
 
-			if (key === "enter" || key === "backspace" || LETTER_REGEX.test(key)) {
-				event.preventDefault();
-				handleVirtualKey(key);
-			}
-		};
+      if (key === "enter") {
+        handleSubmitGuess();
+        return;
+      }
 
-		window.addEventListener("keydown", listener);
-		return () => window.removeEventListener("keydown", listener);
-	}, [handleVirtualKey]);
+      if (key === "backspace") {
+        setCurrentGuess((previous) => previous.slice(0, -1));
+        return;
+      }
 
-	const handleDifficultyClose = useCallback(() => {
-		if (difficulty) {
-			setShowDifficultyModal(false);
-		}
-	}, [difficulty]);
+      if (LETTER_REGEX.test(key)) {
+        setCurrentGuess((previous) => {
+          if (previous.length >= wordLength) {
+            return previous;
+          }
 
-	const handlePlayAgain = useCallback(() => {
-		if (difficulty) {
-			startGame(difficulty);
-		} else {
-			setShowDifficultyModal(true);
-		}
-	}, [difficulty, startGame]);
+          return `${previous}${key}`;
+        });
+      }
+    },
+    [gameStatus, handleSubmitGuess, showDifficultyModal, solution, wordLength],
+  );
 
-		const handleChangeMode = useCallback(() => {
-			if (invalidRowTimeout.current) {
-				clearTimeout(invalidRowTimeout.current);
-				invalidRowTimeout.current = null;
-			}
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
 
-			setDifficulty(null);
-			setSolution(null);
-			setEvaluations([]);
-			setCurrentGuess("");
-			setInvalidRow(null);
-			setGameStatus("idle");
-			setShowDifficultyModal(true);
-		}, []);
+      if (key === "enter" || key === "backspace" || LETTER_REGEX.test(key)) {
+        event.preventDefault();
+        handleVirtualKey(key);
+      }
+    };
 
-	const showDefinition = gameStatus === "won" || gameStatus === "lost";
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [handleVirtualKey]);
 
-		useEffect(() => {
-			return () => {
-				if (invalidRowTimeout.current) {
-					clearTimeout(invalidRowTimeout.current);
-				}
-			};
-		}, []);
+  const handleDifficultyClose = useCallback(() => {
+    if (difficulty) {
+      setShowDifficultyModal(false);
+    }
+  }, [difficulty]);
 
-	return (
-		<>
-			<CursorTrail />
-			<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
-				<WordMarquee words={marqueeWords} />
-			<motion.div
-				aria-hidden
-				className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_55%)]"
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ duration: 1.2, ease: "easeOut" }}
-			/>
-			<motion.div
-				aria-hidden
-				className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(16,185,129,0.22),transparent_60%)]"
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ duration: 1.6, ease: "easeOut", delay: 0.2 }}
-			/>
+  const handlePlayAgain = useCallback(() => {
+    if (difficulty) {
+      startGame(difficulty);
+    } else {
+      setShowDifficultyModal(true);
+    }
+  }, [difficulty, startGame]);
 
-			<div className="relative z-10 flex min-h-screen flex-col items-center">
-				<header className="w-full max-w-5xl px-6 pt-16 sm:pt-20">
-					<HeroTitle />
-					<motion.p
-						className="mx-auto mt-6 max-w-xl text-center text-base text-muted-foreground"
-						initial={{ opacity: 0, y: 12 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-					>
-						Each guess shapes the grid, every finish reveals the definition. Maintain your streak, explore richer vocabulary.
-					</motion.p>
-					<div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<StreakCard current={streak.current} best={streak.best} />
-						<motion.div
-							initial={{ opacity: 0, y: -8 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.4, ease: "easeOut", delay: 0.15 }}
-							className="rounded-3xl border border-border/30 bg-card/60 px-4 py-3 text-sm text-muted-foreground backdrop-blur"
-						>
-							{difficulty ? (
-								<span className="capitalize text-foreground">{difficulty}</span>
-							) : (
-								<span>Select a difficulty to start playing.</span>
-							)}
-							<span className="ml-2 text-muted-foreground/70">
-								{wordLengthDescription} · {MAX_ATTEMPTS} attempts
-							</span>
-						</motion.div>
-					</div>
-				</header>
+  const handleChangeMode = useCallback(() => {
+    if (invalidRowTimeout.current) {
+      clearTimeout(invalidRowTimeout.current);
+      invalidRowTimeout.current = null;
+    }
 
-				<main className="flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 pb-20 pt-8">
-					<Board
-						wordLength={wordLength}
-						maxAttempts={MAX_ATTEMPTS}
-						evaluations={evaluations}
-						currentGuess={currentGuess}
-								invalidRow={invalidRow}
-					/>
-					<Keyboard
-						onKeyPress={handleVirtualKey}
-						letterStatuses={letterStatuses}
-						disabled={gameStatus !== "playing"}
-					/>
-				</main>
-			</div>
+    setDifficulty(null);
+    setSolution(null);
+    setEvaluations([]);
+    setCurrentGuess("");
+    setInvalidRow(null);
+    setGameStatus("idle");
+    setShowDifficultyModal(true);
+  }, []);
 
-			<DifficultyDialog
-				open={showDifficultyModal}
-				onClose={handleDifficultyClose}
-				onSelect={startGame}
-				counts={counts}
-			/>
+  const showDefinition = gameStatus === "won" || gameStatus === "lost";
 
-			{solution && (
-				<DefinitionDialog
-					open={showDefinition}
-					status={gameStatus === "won" ? "won" : "lost"}
-					word={solution.word}
-					definition={solution.definition}
-					onPlayAgain={handlePlayAgain}
-							onChangeMode={handleChangeMode}
-				/>
-			)}
-			</div>
-		</>
-	);
+  useEffect(() => {
+    return () => {
+      if (invalidRowTimeout.current) {
+        clearTimeout(invalidRowTimeout.current);
+      }
+    };
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <>
+      <CursorTrail />
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
+        <WordMarquee words={marqueeWords} />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_55%)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(16,185,129,0.22),transparent_60%)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.6, ease: "easeOut", delay: 0.2 }}
+        />
+
+        <div className="relative z-10 flex min-h-screen flex-col items-center">
+          <header className="w-full max-w-5xl px-6 pt-16 sm:pt-20">
+            <HeroTitle />
+            <motion.p
+              className="mx-auto mt-6 max-w-xl text-center text-base text-muted-foreground"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+            >
+              Each guess shapes the grid, every finish reveals the definition. Maintain your streak, explore richer vocabulary.
+            </motion.p>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <StreakCard current={streak.current} best={streak.best} />
+              {remainingTime !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                  className="rounded-3xl border border-border/30 bg-card/60 px-4 py-3 text-sm text-muted-foreground backdrop-blur"
+                >
+                  <span className="font-mono text-lg text-foreground">
+                    {formatTime(remainingTime)}
+                  </span>
+                </motion.div>
+              )}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut", delay: 0.15 }}
+                className="rounded-3xl border border-border/30 bg-card/60 px-4 py-3 text-sm text-muted-foreground backdrop-blur"
+              >
+                {difficulty ? (
+                  <span className="capitalize text-foreground">{difficulty}</span>
+                ) : (
+                  <span>Select a difficulty to start playing.</span>
+                )}
+                <span className="ml-2 text-muted-foreground/70">
+                  {wordLengthDescription} · {MAX_ATTEMPTS} attempts
+                </span>
+              </motion.div>
+            </div>
+          </header>
+
+          <main className="flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 pb-20 pt-8">
+            <Board
+              wordLength={wordLength}
+              maxAttempts={MAX_ATTEMPTS}
+              evaluations={evaluations}
+              currentGuess={currentGuess}
+              invalidRow={invalidRow}
+            />
+            <Keyboard
+              onKeyPress={handleVirtualKey}
+              letterStatuses={letterStatuses}
+              disabled={gameStatus !== "playing"}
+            />
+          </main>
+        </div>
+
+        <DifficultyDialog
+          open={showDifficultyModal}
+          onClose={handleDifficultyClose}
+          onSelect={startGame}
+          counts={counts}
+          selectedTimer={selectedTimer}
+          onTimerChange={setSelectedTimer}
+        />
+
+        {solution && (
+          <DefinitionDialog
+            open={showDefinition}
+            status={gameStatus === "won" ? "won" : "lost"}
+            word={solution.word}
+            definition={solution.definition}
+            onPlayAgain={handlePlayAgain}
+            onChangeMode={handleChangeMode}
+          />
+        )}
+      </div>
+    </>
+  );
 }
