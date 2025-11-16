@@ -281,12 +281,15 @@ export function GameShell({ dictionary }: GameShellProps) {
     }
 
     if (remainingTime <= 0) {
-      updateStreak(false);
-      setGameStatus("lost");
-      toast({
-        title: "Time's up!",
-        description: "You ran out of time.",
-        variant: "destructive",
+      // Use queueMicrotask to avoid setState in render
+      queueMicrotask(() => {
+        updateStreak(false);
+        setGameStatus("lost");
+        toast({
+          title: "Time's up!",
+          description: "You ran out of time.",
+          variant: "destructive",
+        });
       });
       return;
     }
