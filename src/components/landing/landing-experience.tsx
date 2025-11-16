@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { CursorTrail } from "@/components/game/cursor-trail";
 import { LetterShower } from "@/components/landing/letter-shower";
+import { useAuth } from "@/lib/supabase/auth";
 
 const CURATED_WORDS = [
   "AETHER",
@@ -144,12 +145,14 @@ const BLOCKED_WORDS = ["BREED", "BREEDER", "BREEDERS", "POTTY", "SCUM", "TRASH",
 
 export function LandingExperience({ words }: LandingExperienceProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [pointer, setPointer] = useState({ x: 50, y: 50 });
   const [hasPointer, setHasPointer] = useState(false);
 
   useEffect(() => {
-    router.prefetch("/play");
+    router.prefetch("/menu");
+    router.prefetch("/login");
   }, [router]);
 
   const sanitizedExtras = useMemo(() => {
@@ -195,7 +198,7 @@ export function LandingExperience({ words }: LandingExperienceProps) {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    const limit = Math.min(48, shuffled.length);
+    const limit = Math.min(30, shuffled.length);
 
     return Array.from({ length: limit }).map((_, index) => {
       const word = shuffled[index % shuffled.length];
@@ -257,8 +260,12 @@ export function LandingExperience({ words }: LandingExperienceProps) {
   }, []);
 
   const handleStart = useCallback(() => {
-    router.push("/play");
-  }, [router]);
+    if (user) {
+      router.push("/menu");
+    } else {
+      router.push("/login");
+    }
+  }, [router, user]);
 
   return (
     <div
