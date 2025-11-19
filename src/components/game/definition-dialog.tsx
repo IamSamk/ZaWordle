@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +18,8 @@ const statusCopy = {
     accent: "from-emerald-400/20 to-sky-500/30",
   },
   lost: {
-    title: "Let’s unpack that word",
-    accent: "from-rose-500/20 to-orange-500/30",
+    title: "Let's unpack that word",
+    accent: "from-sky-400/20 to-cyan-500/30",
   },
 };
 
@@ -37,13 +38,13 @@ export function DefinitionDialog({
   word,
   definition,
   onPlayAgain,
-  onChangeMode,
 }: DefinitionDialogProps) {
   const content = statusCopy[status];
+  const router = useRouter();
 
   return (
     <Dialog open={open}>
-      <DialogContent className="max-w-xl border border-border/30 bg-background/95 p-8 backdrop-blur-xl">
+      <DialogContent className="max-w-xl border border-border/30 bg-background/95 p-8 backdrop-blur-xl pointer-events-auto">
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-2xl font-semibold">
             {content.title}
@@ -69,10 +70,10 @@ export function DefinitionDialog({
           </p>
         </motion.div>
         <div className="flex items-center justify-end gap-3">
-          <Button variant="ghost" onClick={onChangeMode}>
-            Try another game mode
+          <Button variant="ghost" onClick={() => router.push("/menu")} className="cursor-pointer hover:bg-slate-800/50 hover:text-white">
+            Change game mode
           </Button>
-          <Button onClick={onPlayAgain} className="bg-foreground text-background hover:bg-foreground/90">
+          <Button onClick={onPlayAgain} className="bg-blue-600 text-white hover:bg-blue-700 cursor-pointer">
             Play again
           </Button>
         </div>

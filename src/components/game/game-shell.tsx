@@ -702,7 +702,7 @@ export function GameShell({ dictionary, mode, initialDifficulty, timerDuration }
             </motion.p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {mode === "classic" && <StreakCard current={streak.current} best={streak.best} />}
-              {getTimerDisplay()}
+              {mode !== "classic" && getTimerDisplay()}
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -347,17 +347,43 @@ export function LandingExperience({ words }: LandingExperienceProps) {
             Glide into a cinematic word puzzle. Sweep the cursor across the metallic title and watch it shimmer while curated words orbit the stage. When you&apos;re ready, dive into streak-chasing gameplay.
           </motion.p>
 
-          <motion.button
-            type="button"
-            onClick={handleStart}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut", delay: 0.32 }}
-            className="group relative overflow-hidden rounded-full border border-slate-200/40 bg-slate-100/10 px-12 py-4 text-sm font-semibold uppercase tracking-[0.45rem] text-slate-100 shadow-[0_24px_80px_-30px_rgba(59,130,246,0.65)] backdrop-blur hover:-translate-y-1 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
-          >
-            <span className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(163,230,53,0.4),rgba(56,189,248,0.5),rgba(14,165,233,0.4))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            Start Game
-          </motion.button>
+          {user ? (
+            <motion.button
+              type="button"
+              onClick={handleStart}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.32 }}
+              className="group relative overflow-hidden rounded-full border border-slate-200/40 bg-slate-100/10 px-12 py-4 text-sm font-semibold uppercase tracking-[0.45rem] text-slate-100 shadow-[0_24px_80px_-30px_rgba(59,130,246,0.65)] backdrop-blur hover:-translate-y-1 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 cursor-pointer"
+            >
+              <span className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(163,230,53,0.4),rgba(56,189,248,0.5),rgba(14,165,233,0.4))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              Start Game
+            </motion.button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.32 }}
+              className="flex gap-4"
+            >
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="group relative overflow-hidden rounded-full border border-slate-200/40 bg-slate-100/10 px-12 py-4 text-sm font-semibold uppercase tracking-[0.45rem] text-slate-100 shadow-[0_24px_80px_-30px_rgba(59,130,246,0.65)] backdrop-blur hover:-translate-y-1 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 cursor-pointer"
+              >
+                <span className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(163,230,53,0.4),rgba(56,189,248,0.5),rgba(14,165,233,0.4))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/signup")}
+                className="group relative overflow-hidden rounded-full border border-emerald-400/40 bg-emerald-500/10 px-12 py-4 text-sm font-semibold uppercase tracking-[0.45rem] text-emerald-100 shadow-[0_24px_80px_-30px_rgba(16,185,129,0.65)] backdrop-blur hover:-translate-y-1 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80 cursor-pointer"
+              >
+                <span className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.4),rgba(5,150,105,0.5),rgba(4,120,87,0.4))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                Sign Up
+              </button>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

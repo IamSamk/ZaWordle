@@ -32,7 +32,7 @@ const difficultyMeta: Record<
   hard: {
     label: "Hard",
     description: "Longer vocabulary for seasoned wordsmiths.",
-    accent: "from-purple-500/40 to-rose-500/20",
+    accent: "from-indigo-500/40 to-blue-500/20",
   },
 };
 

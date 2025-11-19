@@ -104,12 +104,12 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col" style={{ cursor: 'default' }}>
       {/* Header */}
       <header className="p-6 flex justify-between items-center">
         <Link 
           href="/"
-          className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hover:scale-105 transition-transform"
+          className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent hover:scale-105 transition-transform"
         >
           WordleOP
         </Link>
@@ -119,7 +119,7 @@ export default function MenuPage() {
             <Button
               onClick={handleResumeGame}
               size="lg"
-              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white cursor-pointer"
             >
               <Play className="w-5 h-5 mr-2" />
               Resume Game
@@ -130,7 +130,7 @@ export default function MenuPage() {
             <Button
               variant="ghost"
               size="lg"
-              className="text-slate-300 hover:text-white hover:bg-slate-800/50"
+              className="text-slate-300 hover:text-white hover:bg-slate-800/50 cursor-pointer"
             >
               <BarChart3 className="w-5 h-5 mr-2" />
               Leaderboard
@@ -141,7 +141,7 @@ export default function MenuPage() {
             <Button
               variant="ghost"
               size="lg"
-              className="text-slate-300 hover:text-white hover:bg-slate-800/50"
+              className="text-slate-300 hover:text-white hover:bg-slate-800/50 cursor-pointer"
             >
               <User className="w-5 h-5 mr-2" />
               Profile
@@ -152,7 +152,7 @@ export default function MenuPage() {
             variant="ghost"
             size="lg"
             onClick={handleSignOut}
-            className="text-slate-300 hover:text-white hover:bg-slate-800/50"
+            className="text-slate-300 hover:text-white hover:bg-slate-800/50 cursor-pointer"
           >
             <LogOut className="w-5 h-5 mr-2" />
             Sign Out
@@ -173,7 +173,7 @@ export default function MenuPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-8"
               >
-                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-12">
+                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-12">
                   Select Game Mode
                 </h1>
                 
@@ -217,13 +217,13 @@ export default function MenuPage() {
                 <Button
                   variant="ghost"
                   onClick={handleBack}
-                  className="text-slate-300 hover:text-white mb-4"
+                  className="text-slate-300 hover:text-white mb-4 cursor-pointer"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
                 </Button>
                 
-                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-12">
+                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-12">
                   Select Difficulty
                 </h1>
                 
@@ -251,13 +251,13 @@ export default function MenuPage() {
                 <Button
                   variant="ghost"
                   onClick={handleBack}
-                  className="text-slate-300 hover:text-white mb-4"
+                  className="text-slate-300 hover:text-white mb-4 cursor-pointer"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
                 </Button>
                 
-                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-12">
+                <h1 className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-12">
                   Select Timer
                 </h1>
                 
@@ -323,7 +323,7 @@ function ModeCard({
       onClick={onClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className="group relative p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 overflow-hidden"
+      className="group relative p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 overflow-hidden cursor-pointer"
     >
       <div
         className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
@@ -355,7 +355,7 @@ function DifficultyCard({
       onClick={onClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className="group p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 relative overflow-hidden"
+      className="group p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 relative overflow-hidden cursor-pointer"
     >
       <div
         className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
@@ -384,7 +384,7 @@ function TimerCard({
       onClick={onClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className="group p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 relative overflow-hidden"
+      className="group p-8 rounded-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-700 hover:border-slate-600 transition-all duration-300 relative overflow-hidden cursor-pointer"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
       
